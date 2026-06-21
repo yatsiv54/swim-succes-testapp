@@ -1,5 +1,5 @@
 name: swim_progress_testapp
-description: "A new Flutter project."
+description: "A swim pace selector and user directory app built with Flutter, BLoC, and Clean Architecture."
 publish_to: 'none'
 version: 0.1.0+1
 

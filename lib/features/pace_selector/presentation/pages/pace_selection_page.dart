@@ -6,16 +6,17 @@ import '../../domain/entities/pace_entity.dart';
 import '../bloc/swim_pace_bloc.dart';
 import '../bloc/swim_pace_event.dart';
 import '../bloc/swim_pace_state.dart';
-import '../../../training_plan/presentation/pages/training_plan_page.dart';
+
 
 class PaceSelectionPage extends StatefulWidget {
-  const PaceSelectionPage({super.key});
+  final PageController? pageController;
+  const PaceSelectionPage({super.key, this.pageController});
 
   @override
   State<PaceSelectionPage> createState() => _PaceSelectionPageState();
 }
 
-class _PaceSelectionPageState extends State<PaceSelectionPage> {
+class _PaceSelectionPageState extends State<PaceSelectionPage> with AutomaticKeepAliveClientMixin {
   late TextEditingController _minutesController;
   late TextEditingController _secondsController;
   late FocusNode _minutesFocusNode;
@@ -38,6 +39,9 @@ class _PaceSelectionPageState extends State<PaceSelectionPage> {
     _minutesFocusNode.addListener(_onMinutesFocusChange);
     _secondsFocusNode.addListener(_onSecondsFocusChange);
   }
+
+  @override
+  bool get wantKeepAlive => true;
 
   void _onMinutesFocusChange() {
     if (!_minutesFocusNode.hasFocus) {
@@ -76,7 +80,9 @@ class _PaceSelectionPageState extends State<PaceSelectionPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
+      backgroundColor: Colors.transparent,
       resizeToAvoidBottomInset: true,
       body: GestureDetector(
         onTap: () {
@@ -84,281 +90,253 @@ class _PaceSelectionPageState extends State<PaceSelectionPage> {
           _secondsFocusNode.unfocus();
         },
         behavior: HitTestBehavior.opaque,
-        child: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppTheme.backgroundCard, AppTheme.backgroundDark],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
-          child: SafeArea(
-            bottom: true,
-            child: BlocConsumer<SwimPaceBloc, SwimPaceState>(
-              listenWhen: (prev, curr) =>
-                  prev.minutes != curr.minutes ||
-                  prev.seconds != curr.seconds ||
-                  prev.status != curr.status ||
-                  prev.isSkipped != curr.isSkipped,
-              listener: (context, state) {
-                if (!_minutesFocusNode.hasFocus) {
-                  if (int.tryParse(_minutesController.text) != state.minutes) {
-                    _minutesController.text = state.minutes.toString();
-                  }
-                }
-                if (!_secondsFocusNode.hasFocus) {
-                  if (int.tryParse(_secondsController.text) != state.seconds) {
-                    _secondsController.text = state.seconds.toString().padLeft(
-                      2,
-                      '0',
-                    );
-                  }
-                }
+        child: BlocConsumer<SwimPaceBloc, SwimPaceState>(
+          listenWhen: (prev, curr) =>
+              prev.minutes != curr.minutes ||
+              prev.seconds != curr.seconds ||
+              prev.status != curr.status ||
+              prev.isSkipped != curr.isSkipped,
+          listener: (context, state) {
+            if (!_minutesFocusNode.hasFocus) {
+              if (int.tryParse(_minutesController.text) != state.minutes) {
+                _minutesController.text = state.minutes.toString();
+              }
+            }
+            if (!_secondsFocusNode.hasFocus) {
+              if (int.tryParse(_secondsController.text) != state.seconds) {
+                _secondsController.text = state.seconds.toString().padLeft(
+                  2,
+                  '0',
+                );
+              }
+            }
 
-                if (state.status == SwimPaceStatus.success || state.isSkipped) {
-                  final swimBloc = context.read<SwimPaceBloc>();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const TrainingPlanPage(),
+            if (state.status == SwimPaceStatus.success) {
+              final Color levelColor = AppTheme.getLevelColor(state.level);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Pace submitted successfully!',
+                    style: AppTheme.subtitle.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
                     ),
-                  ).then((_) {
-                    swimBloc.add(ResetPaceSelection());
-                  });
-                } else if (state.status == SwimPaceStatus.failure) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        state.errorMessage ??
-                            'Submission failed. Please try again.',
-                        style: AppTheme.subtitle.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
+                  ),
+                  backgroundColor: levelColor,
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            } else if (state.status == SwimPaceStatus.failure) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    state.errorMessage ??
+                        'Submission failed. Please try again.',
+                    style: AppTheme.subtitle.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  backgroundColor: Colors.redAccent,
+                ),
+              );
+            }
+          },
+          builder: (context, state) {
+            final double sliderValue = _getSliderValue(
+              state.minutes,
+              state.seconds,
+            );
+            final isLoading = state.status == SwimPaceStatus.loading;
+
+            final Color targetColor = AppTheme.getLevelColor(state.level);
+
+            // TweenAnimationBuilder translates color snaps into smooth transition sweeps
+            return TweenAnimationBuilder<Color?>(
+              tween: ColorTween(end: targetColor),
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeInOut,
+              builder: (context, animatedColor, child) {
+                final Color levelColor = animatedColor ?? targetColor;
+
+                return SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0,
+                    vertical: 12.0,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 12),
+
+                      Text(
+                        "What's your fastest\n100m freestyle?",
+                        style: AppTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        "This helps us build a more accurate plan\nfor you.",
+                        style: AppTheme.subtitle,
+                      ),
+
+                      const SizedBox(height: 36),
+
+                      Center(
+                        child: Text(
+                          "YOUR PACE",
+                          style: AppTheme.labelSmall,
                         ),
                       ),
-                      backgroundColor: Colors.redAccent,
-                    ),
-                  );
-                }
-              },
-              builder: (context, state) {
-                final double sliderValue = _getSliderValue(
-                  state.minutes,
-                  state.seconds,
-                );
-                final isLoading = state.status == SwimPaceStatus.loading;
+                      const SizedBox(height: 4),
 
-                final Color targetColor = AppTheme.getLevelColor(state.level);
-
-                // TweenAnimationBuilder translates color snaps into smooth transition sweeps
-                return TweenAnimationBuilder<Color?>(
-                  tween: ColorTween(end: targetColor),
-                  duration: const Duration(milliseconds: 350),
-                  curve: Curves.easeInOut,
-                  builder: (context, animatedColor, child) {
-                    final Color levelColor = animatedColor ?? targetColor;
-
-                    return SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24.0,
-                        vertical: 12.0,
+                      _buildTimePickerFields(context, state, levelColor),
+                      const SizedBox(height: 16),
+                      Center(
+                        child: Text(
+                          "MIN   :   SEC   /   100M",
+                          style: AppTheme.labelSmall.copyWith(
+                            fontSize: 14,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const SizedBox(height: 8),
-                          _buildTopHeader(),
-                          const SizedBox(height: 24),
+                      const SizedBox(height: 40),
+                      Center(
+                        child: Text(
+                          "THAT PUTS YOU AT",
+                          style: AppTheme.labelSmall,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
 
-                          Text(
-                            "What's your fastest\n100m freestyle?",
-                            style: AppTheme.titleLarge,
+                      Center(
+                        child: Text(
+                          state.level.displayName,
+                          style: AppTheme.subtitle.copyWith(
+                            color: levelColor,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
                           ),
-                          const SizedBox(height: 12),
-                          Text(
-                            "This helps us build a more accurate plan\nfor you.",
-                            style: AppTheme.subtitle,
-                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
 
-                          const SizedBox(height: 36),
+                      _buildLevelsAndSlider(
+                        context,
+                        state,
+                        sliderValue,
+                        levelColor,
+                      ),
 
-                          Center(
-                            child: Text(
-                              "YOUR PACE",
-                              style: AppTheme.labelSmall,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
+                      const SizedBox(height: 10),
 
-                          _buildTimePickerFields(context, state, levelColor),
-                          const SizedBox(height: 16),
-                          Center(
-                            child: Text(
-                              "MIN   :   SEC   /   100M",
-                              style: AppTheme.labelSmall.copyWith(
-                                fontSize: 14,
-                                letterSpacing: 1.0,
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: levelColor.withValues(
+                                alpha: isLoading ? 0.08 : 0.35,
                               ),
+                              blurRadius: 16,
+                              spreadRadius: 2,
+                              offset: const Offset(0, 4),
                             ),
-                          ),
-                          const SizedBox(height: 40),
-                          Center(
-                            child: Text(
-                              "THAT PUTS YOU AT",
-                              style: AppTheme.labelSmall,
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: isLoading
+                              ? null
+                              : () {
+                                  _minutesFocusNode.unfocus();
+                                  _secondsFocusNode.unfocus();
+                                  context.read<SwimPaceBloc>().add(
+                                    SubmitPace(),
+                                  );
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: levelColor,
+                            disabledBackgroundColor: levelColor.withValues(
+                              alpha: 0.3,
                             ),
-                          ),
-                          const SizedBox(height: 4),
-
-                          Center(
-                            child: Text(
-                              state.level.displayName,
-                              style: AppTheme.subtitle.copyWith(
-                                color: levelColor,
-                                fontSize: 24,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-
-                          _buildLevelsAndSlider(
-                            context,
-                            state,
-                            sliderValue,
-                            levelColor,
-                          ),
-
-                          const SizedBox(height: 10),
-
-                          Container(
-                            decoration: BoxDecoration(
+                            foregroundColor: Colors.black,
+                            shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: levelColor.withValues(
-                                    alpha: isLoading ? 0.08 : 0.35,
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            elevation: 0,
+                          ),
+                          child: isLoading
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.black,
+                                    strokeWidth: 2,
                                   ),
-                                  blurRadius: 16,
-                                  spreadRadius: 2,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: ElevatedButton(
-                              onPressed: isLoading
-                                  ? null
-                                  : () {
-                                      _minutesFocusNode.unfocus();
-                                      _secondsFocusNode.unfocus();
-                                      context.read<SwimPaceBloc>().add(
-                                        SubmitPace(),
-                                      );
-                                    },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: levelColor,
-                                disabledBackgroundColor: levelColor.withValues(
-                                  alpha: 0.3,
-                                ),
-                                foregroundColor: Colors.black,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 16,
-                                ),
-                                elevation: 0,
-                              ),
-                              child: isLoading
-                                  ? const SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      "Continue",
+                                      style: AppTheme.subtitle.copyWith(
                                         color: Colors.black,
-                                        strokeWidth: 2,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
                                       ),
-                                    )
-                                  : Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          "Continue",
-                                          style: AppTheme.subtitle.copyWith(
-                                            color: Colors.black,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        const Icon(
-                                          Icons.arrow_forward_rounded,
-                                          size: 18,
-                                          color: Colors.black,
-                                        ),
-                                      ],
                                     ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          Center(
-                            child: GestureDetector(
-                              onTap: isLoading
-                                  ? null
-                                  : () {
-                                      _minutesFocusNode.unfocus();
-                                      _secondsFocusNode.unfocus();
-                                      context.read<SwimPaceBloc>().add(
-                                        SkipPaceSelection(),
-                                      );
-                                    },
-                              child: Text(
-                                "I don't know my pace, skip this",
-                                style: AppTheme.subtitle.copyWith(
-                                  color: isLoading
-                                      ? AppTheme.textSlate
-                                      : AppTheme.textGrey,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  decoration: TextDecoration.underline,
+                                    const SizedBox(width: 8),
+                                    const Icon(
+                                      Icons.arrow_forward_rounded,
+                                      size: 18,
+                                      color: Colors.black,
+                                    ),
+                                  ],
                                 ),
-                              ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      Center(
+                        child: GestureDetector(
+                          onTap: isLoading
+                              ? null
+                              : () {
+                                  _minutesFocusNode.unfocus();
+                                  _secondsFocusNode.unfocus();
+                                  context.read<SwimPaceBloc>().add(
+                                    SkipPaceSelection(),
+                                  );
+                                  widget.pageController?.animateToPage(
+                                    1,
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeInOut,
+                                  );
+                                },
+                          child: Text(
+                            "I don't know my pace, skip this",
+                            style: AppTheme.subtitle.copyWith(
+                              color: isLoading
+                                  ? AppTheme.textSlate
+                                  : AppTheme.textGrey,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              decoration: TextDecoration.underline,
                             ),
                           ),
-                          const SizedBox(height: 12),
-                        ],
+                        ),
                       ),
-                    );
-                  },
+                      const SizedBox(height: 12),
+                    ],
+                  ),
                 );
               },
-            ),
-          ),
+            );
+          },
         ),
       ),
-    );
-  }
-
-  Widget _buildTopHeader() {
-    return Row(
-      children: List.generate(2, (index) {
-        final isActive = index == 0;
-        return Expanded(
-          child: Container(
-            height: 3,
-            margin: EdgeInsets.only(
-              left: index == 0 ? 0 : 4,
-              right: index == 1 ? 0 : 4,
-            ),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(2),
-              color: isActive ? AppTheme.primaryTeal : const Color(0xFF1E293B),
-            ),
-          ),
-        );
-      }),
     );
   }
 
@@ -416,7 +394,7 @@ class _PaceSelectionPageState extends State<PaceSelectionPage> {
                     width: 12,
                     height: 12,
                     decoration: BoxDecoration(
-                      color: const Color.fromARGB(255, 45, 202, 194),
+                      color: activeColor,
                       borderRadius: BorderRadius.circular(1.5),
                     ),
                   ),
@@ -425,7 +403,7 @@ class _PaceSelectionPageState extends State<PaceSelectionPage> {
                     width: 12,
                     height: 12,
                     decoration: BoxDecoration(
-                      color: const Color.fromARGB(255, 45, 202, 194),
+                      color: activeColor,
                       borderRadius: BorderRadius.circular(1.5),
                     ),
                   ),
@@ -582,7 +560,7 @@ class _PaceSelectionPageState extends State<PaceSelectionPage> {
             },
           ),
         ),
-        const SizedBox(height: 0),
+
 
         SliderTheme(
           data: SliderThemeData(

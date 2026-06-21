@@ -3,34 +3,33 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../features/pace_selector/domain/entities/pace_entity.dart';
 
 class AppTheme {
-  // Brand colors
-  static const Color primaryTeal = Color.fromARGB(255, 45, 202, 194); // Teal
+  
+  static const Color primaryTeal = Color.fromARGB(255, 45, 202, 194); 
   static const Color backgroundDark = Color(0xFF050812);
   static const Color backgroundCard = Color.fromARGB(255, 19, 31, 58);
   static const Color textWhite = Colors.white;
 
-  // Neutral slate/grey shades
+  
   static const Color textGrey = Color(0xFF64748B);
   static const Color textSlate = Color(0xFF475569);
   static const Color tickGrey = Color(0xFF334155);
-  static const Color borderGrey = Color(0x14FFFFFF); // white with 0.08 opacity
+  static const Color borderGrey = Color(0x14FFFFFF); 
 
-  // Swimmer Level Color Map
-  // EDIT THESE COLORS to customize the look for each skill level
-  static const Color colorElite = Color(0xFFda9224); // Purple
+  
+  static const Color colorElite = Color(0xFFda9224); 
   static const Color colorAdvanced = Color.fromARGB(
     255,
     87,
     129,
     163,
-  ); // Orange
+  ); 
   static const Color colorIntermediate = Color.fromARGB(
     255,
     45,
     202,
     194,
-  ); // Teal
-  static const Color colorBeginner = Color.fromARGB(255, 137, 152, 173); // Blue
+  ); 
+  static const Color colorBeginner = Color.fromARGB(255, 137, 152, 173); 
 
   static Color getLevelColor(SwimmerLevel level) {
     switch (level) {
@@ -45,7 +44,7 @@ class AppTheme {
     }
   }
 
-  // Typography revised based on exact visual analysis
+  
   static TextStyle get titleLarge => GoogleFonts.outfit(
     color: textWhite,
     fontSize: 28,

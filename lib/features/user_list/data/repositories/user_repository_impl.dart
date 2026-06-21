@@ -1,17 +1,19 @@
 import '../../../../core/errors/failures.dart';
 import '../../../../core/network/api_client.dart';
-import '../../domain/repositories/pace_repository.dart';
-import '../datasources/pace_remote_data_source.dart';
+import '../../domain/entities/user_entity.dart';
+import '../../domain/repositories/user_repository.dart';
+import '../datasources/user_remote_data_source.dart';
 
-class PaceRepositoryImpl implements PaceRepository {
-  final PaceRemoteDataSource _remoteDataSource;
+class UserRepositoryImpl implements UserRepository {
+  final UserRemoteDataSource _remoteDataSource;
 
-  PaceRepositoryImpl(this._remoteDataSource);
+  UserRepositoryImpl(this._remoteDataSource);
 
   @override
-  Future<void> submitPace(int paceSeconds) async {
+  Future<List<UserEntity>> getUsers() async {
     try {
-      await _remoteDataSource.submitPace(paceSeconds);
+      final userModels = await _remoteDataSource.getUsers();
+      return userModels;
     } on NetworkException {
       throw const NetworkFailure('No internet connection. Please check your network and try again.');
     } on ServerException catch (e) {
