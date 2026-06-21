@@ -16,7 +16,7 @@ import 'features/user_list/presentation/bloc/user_list_bloc.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Set system UI styling to match the dark theme
+  
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.light,
@@ -25,7 +25,6 @@ void main() {
     systemNavigationBarIconBrightness: Brightness.light,
   ));
 
-  // Instantiate dependencies (Clean Architecture injection)
   final apiClient = ApiClient();
   final remoteDataSource = PaceRemoteDataSourceImpl(apiClient);
   final repository = PaceRepositoryImpl(remoteDataSource);
