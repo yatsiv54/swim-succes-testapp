@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://storage.googleapis.com/cms-storage-bucket/6e19fee6b47b36ca613f.png" alt="Flutter" width="80" />
+<img src="(https://img.shields.io/badge/Flutter-%2302569B.svg?style=for-the-badge&logo=Flutter&logoColor=white" alt="Flutter" width="80" />
 
 # 🏊 Swim Success
 
