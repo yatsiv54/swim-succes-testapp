@@ -124,12 +124,13 @@ lib/
 
 ## 🔄 What I'd Do Differently With More Time
 
+- **Cubit instead of BLoC** — for screens like these, `Cubit` is more concise and sufficient. Full BLoC with events is overkill when there are no complex event-to-event transformations
+- **Freezed + build_runner instead of Equatable** — auto-generated `copyWith`, `==`, `toString`, sealed unions, and JSON serialization out of the box. Less boilerplate, fewer human errors
+- **GetIt for dependency injection** — replace manual DI wiring in `main.dart` with `GetIt` + `Injectable` for a scalable, testable service locator
+- **GoRouter instead of Navigator** — declarative routing with deep linking support, typed route parameters, and better navigation state management
+- **Dio instead of http** — built-in interceptors, request cancellation, automatic retries, and `FormData` support. Much more flexible for production apps
+- **Public widget classes instead of private build methods** — extract `_buildUserCard()`, `_buildSearchBar()`, `_buildPickerColumn()` etc. into separate public widget files. This improves reusability, testability, and keeps files under 200–300 lines
 - **Tests** — unit tests for BLoCs with `bloc_test`, repository tests with `mocktail`, widget tests for key UI flows
-- **Dependency injection** — replace manual DI with `get_it` / `injectable` for scalability
-- **Widget extraction** — break the 800+ line `PaceSelectionPage` into smaller reusable widgets
-- **Either pattern** — use `fpdart` `Either<Failure, T>` for explicit error handling in repositories
-- **Accessibility** — semantic labels for screen readers
-- **Localization** — extract strings to ARB files for i18n
 
 ---
 
